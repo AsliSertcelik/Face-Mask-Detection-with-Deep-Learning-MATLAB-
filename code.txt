@@ -1,0 +1,123 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "2bT8Yj8azuN2"
+      },
+      "outputs": [],
+      "source": [
+        "Face Mask Detection with Deep Learning (MATLAB)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "imds = imageDatastore(\"data\", ...\n",
+        "    'IncludeSubfolders',true, ...\n",
+        "    'LabelSource','foldernames');\n",
+        "\n",
+        "countEachLabel(imds)\n",
+        "\n",
+        "[imdsTrain, imdsTemp] = splitEachLabel(imds, 0.8, 'randomized');\n",
+        "[imdsValidation, imdsTest] = splitEachLabel(imdsTemp, 0.5, 'randomized');\n",
+        "\n",
+        "countEachLabel(imdsTrain)\n",
+        "countEachLabel(imdsValidation)\n",
+        "countEachLabel(imdsTest)\n",
+        "\n",
+        "augmenter = imageDataAugmenter( ...\n",
+        "    'RandRotation',[-10 10], ...\n",
+        "    'RandXTranslation',[-10 10], ...\n",
+        "    'RandYTranslation',[-10 10], ...\n",
+        "    'RandXScale',[0.9 1.1], ...\n",
+        "    'RandYScale',[0.9 1.1]);\n",
+        "\n",
+        "inputSize = [224 224 3];\n",
+        "\n",
+        "augTrain = augmentedImageDatastore(inputSize, imdsTrain, ...\n",
+        "    'DataAugmentation', augmenter, ...\n",
+        "    'ColorPreprocessing','gray2rgb');\n",
+        "\n",
+        "augValidation = augmentedImageDatastore(inputSize, imdsValidation, ...\n",
+        "    'ColorPreprocessing','gray2rgb');\n",
+        "\n",
+        "augTest = augmentedImageDatastore(inputSize, imdsTest, ...\n",
+        "    'ColorPreprocessing','gray2rgb');\n",
+        "\n",
+        "net = mobilenetv2;\n",
+        "lgraph = layerGraph(net);\n",
+        "\n",
+        "numClasses = numel(categories(imds.Labels));\n",
+        "\n",
+        "lgraph = replaceLayer(lgraph, 'Logits', ...\n",
+        "    fullyConnectedLayer(numClasses, 'Name', 'new_fc'));\n",
+        "\n",
+        "lgraph = replaceLayer(lgraph, 'ClassificationLayer_Logits', ...\n",
+        "    classificationLayer('Name', 'new_classoutput'));\n",
+        "\n",
+        "options = trainingOptions('adam', ...\n",
+        "    'MiniBatchSize',16, ...\n",
+        "    'MaxEpochs',3, ...\n",
+        "    'InitialLearnRate',1e-3, ...\n",
+        "    'ValidationData',augValidation, ...\n",
+        "    'ValidationFrequency',30, ...\n",
+        "    'Verbose',false, ...\n",
+        "    'Plots','training-progress');\n",
+        "trainedNet = trainNetwork(augTrain, lgraph, options);\n",
+        "\n",
+        "YPred = classify(trainedNet, augTest);\n",
+        "YTest = imdsTest.Labels;\n",
+        "\n",
+        "accuracy = mean(YPred == YTest)\n",
+        "\n",
+        "figure\n",
+        "confusionchart(YTest, YPred)\n",
+        "title('Confusion Matrix')\n",
+        "\n",
+        "score = predict(trainedNet, augTest);\n",
+        "\n",
+        "[X,Y,~,AUC] = perfcurve(YTest, score(:,2), 'with_mask');\n",
+        "\n",
+        "figure\n",
+        "plot(X,Y)\n",
+        "xlabel('False Positive Rate')\n",
+        "ylabel('True Positive Rate')\n",
+        "title(['ROC Curve, AUC = ' num2str(AUC)])\n",
+        "grid on\n",
+        "\n",
+        "confMat = confusionmat(YTest, YPred);\n",
+        "\n",
+        "TP = confMat(1,1);\n",
+        "FP = confMat(2,1);\n",
+        "FN = confMat(1,2);\n",
+        "TN = confMat(2,2);\n",
+        "\n",
+        "precision = TP / (TP + FP)\n",
+        "recall = TP / (TP + FN)\n",
+        "f1 = 2 * (precision * recall) / (precision + recall)\n",
+        "specificity = TN / (TN + FP)"
+      ],
+      "metadata": {
+        "id": "m2rX_zo4zwBi"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
