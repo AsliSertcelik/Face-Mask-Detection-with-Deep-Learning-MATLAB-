@@ -7,6 +7,9 @@ Bu proje, derin öğrenme teknikleri kullanılarak bir kişinin yüz maskesi tak
 
 Model geliştirme süreci MATLAB Deep Learning Toolbox kullanılarak gerçekleştirilmiştir.
 
+Veri seti kaggle üzerinden indirilebilir.
+https://www.kaggle.com/datasets/omkargurav/face-mask-dataset
+
 ---
 
 ##  Veri Seti
@@ -119,6 +122,10 @@ This project aims to detect whether a person is wearing a face mask using deep l
 
 The model was trained and evaluated using MATLAB Deep Learning Toolbox.
 
+The dataset can be downloeded from kaggle.
+https://www.kaggle.com/datasets/omkargurav/face-mask-dataset
+
+---
 ---
 
 ## Dataset
